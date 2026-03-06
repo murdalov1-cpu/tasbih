@@ -6,10 +6,384 @@
   <title>Тасбих</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg-deep:    #06091a;
+      --bg-mid:     #0b1030;
+      --surface:    rgba(255,255,255,0.06);
+      --border:     rgba(255,255,255,0.10);
+      --accent:     #4ade80;
+      --accent-dim: #22c55e;
+      --text:       #e8eaf2;
+      --muted:      rgba(255,255,255,0.38);
+      --ring-track: rgba(255,255,255,0.08);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: radial-gradient(ellipse at 50% 0%, #101840 0%, #060918 70%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 20px 32px;
+      user-select: none;
+      position: relative;
+    }
+
+    /* ── Stars ── */
+    #stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: white;
+    }
+
+    /* ── Content above stars ── */
+    .header, .stats-row, .ring-area, .hint, .zikr-btn { position: relative; z-index: 1; }
+
+    /* ── Header ── */
+    .header {
+      width: 100%;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .header-left {}
+    .title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .title-arabic {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 2px;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+    }
+    .reset-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      padding: 7px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .reset-btn:active { border-color: var(--accent); color: var(--accent); background: rgba(74,222,128,0.08); }
+    .reset-icon { font-size: 11px; }
+
+    /* ── Stats row ── */
+    .stats-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 0;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 8px 14px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text);
+    }
+    .stat-value.accent { color: var(--accent); }
+
+    /* ── Ring + Tap area ── */
+    .ring-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring-wrap {
+      position: relative;
+      width: 240px;
+      height: 240px;
+    }
+
+    .ring-wrap svg {
+      position: absolute;
+      inset: 0;
+      transform: rotate(-90deg);
+    }
+
+    .ring-track { fill: none; stroke: var(--ring-track); stroke-width: 5; }
+    .ring-fill {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 5;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.15s ease, stroke 0.4s ease;
+    }
+
+    .tap-btn {
+      position: absolute;
+      inset: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #1e2560, #0e1238);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 0 0 1px rgba(255,255,255,0.06),
+        0 12px 40px rgba(0,0,0,0.6);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      -webkit-appearance: none;
+    }
+    .tap-btn:active {
+      transform: scale(0.93);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.04),
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 4px 16px rgba(0,0,0,0.6);
+    }
+    .counter {
+      font-size: 72px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -3px;
+      color: var(--text);
+      transition: transform 0.08s ease;
+    }
+    .counter.bump { transform: scale(1.07); }
+    .goal-sub {
+      font-size: 14px;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Hint ── */
+    .hint {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 12px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Zikr button ── */
+    .zikr-btn {
+      width: 100%;
+      padding: 18px 24px;
+      background: rgba(15, 25, 45, 0.85);
+      border: 1px solid rgba(74, 222, 128, 0.35);
+      border-radius: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: 0 0 24px rgba(74,222,128,0.08);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+    .zikr-btn:active {
+      border-color: var(--accent);
+      box-shadow: 0 0 32px rgba(74,222,128,0.18);
+    }
+    .zikr-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(74,222,128,0.8);
+    }
+    .zikr-label {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    /* ── Goal Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 50;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+
+    .modal-sheet {
+      width: 100%;
+      background: #0f1428;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-bottom: none;
+      border-radius: 24px 24px 0 0;
+      padding: 12px 20px 40px;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .modal-overlay.show .modal-sheet { transform: translateY(0); }
+
+    .modal-handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.15);
+      margin: 0 auto 20px;
+    }
+    .modal-title {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .modal-presets {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .preset-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 600;
+      padding: 14px 8px;
+      border-radius: 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      -webkit-appearance: none;
+    }
+    .preset-btn.active {
+      background: rgba(74,222,128,0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .preset-btn:active { opacity: 0.7; }
+
+    .custom-goal-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .custom-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 16px;
+      padding: 12px 14px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .custom-input:focus { border-color: rgba(255,255,255,0.25); }
+    .custom-input::placeholder { color: var(--muted); }
+    .custom-set-btn {
+      background: var(--accent);
+      border: none;
+      color: #071007;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      -webkit-appearance: none;
+    }
+
+    /* ── Complete overlay ── */
+    .complete {
+      position: fixed;
+      inset: 0;
+      background: rgba(6,9,26,0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 40;
+    }
+    .complete.show { opacity: 1; pointer-events: all; }
+    .complete-icon { font-size: 64px; }
+    .complete-title { font-size: 26px; font-weight: 700; letter-spacing: 0.02em; }
+    .complete-sub { font-size: 14px; color: var(--muted); letter-spacing: 0.06em; }
+    .complete-rounds {
+      font-size: 18px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .complete-btn {
+      margin-top: 12px;
+      background: var(--accent);
+      color: #071007;
+      border: none;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 15px 44px;
+      border-radius: 50px;
+      cursor: pointer;
+      -webkit-appearance: none;
+    }
+
+    /* ── Gate (non-Telegram) ── */
     .gate {
       position: fixed;
       inset: 0;
-      background: #0f1117;
+      background: #06091a;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -20,268 +394,108 @@
       z-index: 100;
     }
     .gate-icon { font-size: 56px; }
-    .gate-title { font-size: 22px; font-weight: 700; color: #f1f5f9; }
-    .gate-sub { font-size: 15px; color: #64748b; line-height: 1.5; }
+    .gate-title { font-size: 22px; font-weight: 700; color: var(--text); }
+    .gate-sub { font-size: 15px; color: var(--muted); line-height: 1.5; }
     .gate-link {
       margin-top: 8px;
-      color: #4ade80;
+      color: var(--accent);
       text-decoration: none;
       font-weight: 600;
       font-size: 16px;
     }
   </style>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-    :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --accent: #4ade80;
-      --accent-dim: #22c55e;
-      --text: #f1f5f9;
-      --muted: #64748b;
-      --ring: rgba(74, 222, 128, 0.15);
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      padding: 32px 24px 40px;
-      user-select: none;
-    }
-
-    /* ── Header ── */
-    .header {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .title {
-      font-size: 20px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-    }
-
-    .reset-btn {
-      background: none;
-      border: 1px solid #334155;
-      color: var(--muted);
-      font-size: 13px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: border-color 0.2s, color 0.2s;
-    }
-    .reset-btn:active { border-color: var(--accent); color: var(--accent); }
-
-    /* ── Rounds ── */
-    .rounds {
-      font-size: 14px;
-      color: var(--muted);
-      letter-spacing: 0.04em;
-    }
-    .rounds span {
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    /* ── Counter display ── */
-    .counter-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .counter {
-      font-size: 96px;
-      font-weight: 700;
-      line-height: 1;
-      letter-spacing: -4px;
-      transition: transform 0.08s ease;
-    }
-    .counter.bump { transform: scale(1.06); }
-
-    .goal-label {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    /* ── Progress arc ── */
-    .progress-ring {
-      position: relative;
-      width: 260px;
-      height: 260px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .progress-ring svg {
-      position: absolute;
-      top: 0; left: 0;
-      transform: rotate(-90deg);
-    }
-
-    .ring-bg { fill: none; stroke: #1e2535; stroke-width: 6; }
-    .ring-fg {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 6;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.15s ease;
-    }
-
-    /* ── Tap button ── */
-    .tap-btn {
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #2a3a2a, #111b11);
-      border: none;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      box-shadow:
-        0 0 0 12px var(--ring),
-        0 0 0 24px rgba(74,222,128,0.05),
-        0 8px 32px rgba(0,0,0,0.6);
-      transition: transform 0.08s ease, box-shadow 0.08s ease;
-      position: relative;
-      z-index: 1;
-    }
-
-    .tap-btn:active {
-      transform: scale(0.94);
-      box-shadow:
-        0 0 0 8px var(--ring),
-        0 4px 16px rgba(0,0,0,0.6);
-    }
-
-    .tap-icon {
-      font-size: 40px;
-      line-height: 1;
-    }
-
-    .tap-hint {
-      font-size: 12px;
-      color: rgba(255,255,255,0.3);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    /* ── Mode selector ── */
-    .mode-selector {
-      display: flex;
-      gap: 8px;
-    }
-
-    .mode-btn {
-      background: var(--surface);
-      border: 1px solid #2a2f3e;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 500;
-      padding: 8px 20px;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .mode-btn.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #0a1a0a;
-      font-weight: 700;
-    }
-
-    /* ── Complete overlay ── */
-    .complete {
-      position: fixed;
-      inset: 0;
-      background: rgba(10,15,10,0.92);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 10;
-    }
-    .complete.show { opacity: 1; pointer-events: all; }
-    .complete-icon { font-size: 72px; }
-    .complete-title { font-size: 28px; font-weight: 700; }
-    .complete-sub { font-size: 15px; color: var(--muted); }
-    .complete-btn {
-      margin-top: 8px;
-      background: var(--accent);
-      color: #0a1a0a;
-      border: none;
-      font-size: 16px;
-      font-weight: 700;
-      padding: 14px 40px;
-      border-radius: 30px;
-      cursor: pointer;
-    }
-  </style>
 </head>
 <body>
 
+  <!-- Stars background -->
+  <div id="stars"></div>
+
+  <!-- Header -->
   <div class="header">
-    <div class="title">Тасбих</div>
-    <button class="reset-btn" onclick="resetAll()">Сброс</button>
+    <div class="header-left">
+      <div class="title">Тасбих</div>
+      <div class="title-arabic">ذِكر</div>
+    </div>
+    <button class="reset-btn" onclick="resetAll()">
+      <span class="reset-icon">↺</span> Сброс
+    </button>
   </div>
 
-  <div class="rounds">Кругов завершено: <span id="rounds">0</span></div>
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Круги</div>
+      <div class="stat-value" id="stat-rounds">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Всего</div>
+      <div class="stat-value" id="stat-total">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Цель</div>
+      <div class="stat-value accent" id="stat-goal">33</div>
+    </div>
+  </div>
 
-  <div class="counter-wrap">
-    <div class="progress-ring">
-      <svg viewBox="0 0 260 260" width="260" height="260">
-        <circle class="ring-bg" cx="130" cy="130" r="120"/>
-        <circle class="ring-fg" id="ring" cx="130" cy="130" r="120"
-          stroke-dasharray="753.98"
-          stroke-dashoffset="753.98"/>
+  <!-- Ring + Tap -->
+  <div class="ring-area">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 240 240" width="240" height="240">
+        <circle class="ring-track" cx="120" cy="120" r="110"/>
+        <circle class="ring-fill" id="ring" cx="120" cy="120" r="110"
+          stroke-dasharray="691.15"
+          stroke-dashoffset="691.15"/>
       </svg>
-      <button class="tap-btn" onclick="tap()" id="tapBtn">
-        <div class="tap-icon">📿</div>
-        <div class="tap-hint">нажми</div>
+      <button class="tap-btn" id="tapBtn" onclick="tap()">
+        <div class="counter" id="counter">0</div>
+        <div class="goal-sub" id="goalSub">/ 33</div>
       </button>
     </div>
-    <div class="counter" id="counter">0</div>
-    <div class="goal-label" id="goalLabel">из 33</div>
   </div>
 
-  <div class="mode-selector">
-    <button class="mode-btn" onclick="setGoal(11, this)">11</button>
-    <button class="mode-btn active" onclick="setGoal(33, this)">33</button>
-    <button class="mode-btn" onclick="setGoal(100, this)">100</button>
-    <button class="mode-btn" id="infiniteBtn" onclick="setInfinite(this)">∞</button>
+  <!-- Hint -->
+  <div class="hint">Нажми для счёта</div>
+
+  <!-- Zikr selector button -->
+  <button class="zikr-btn" onclick="openModal()">
+    <span class="zikr-dot"></span>
+    <span class="zikr-label" id="zikrLabel">Зикр</span>
+    <span class="zikr-dot"></span>
+  </button>
+
+  <!-- Goal Modal -->
+  <div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Выбери цель</div>
+      <div class="modal-presets">
+        <button class="preset-btn" onclick="setGoal(11)">11</button>
+        <button class="preset-btn active" onclick="setGoal(33)">33</button>
+        <button class="preset-btn" onclick="setGoal(99)">99</button>
+        <button class="preset-btn" onclick="setGoal(100)">100</button>
+        <button class="preset-btn" onclick="setGoal(34)">34</button>
+        <button class="preset-btn" onclick="setGoal(1000)">1000</button>
+        <button class="preset-btn" onclick="setInfinite()">∞</button>
+      </div>
+      <div class="custom-goal-row">
+        <input class="custom-input" type="number" id="customGoalInput" placeholder="Своё число" min="1" max="99999">
+        <button class="custom-set-btn" onclick="setCustomGoal()">ОК</button>
+      </div>
+    </div>
   </div>
 
+  <!-- Complete overlay -->
   <div class="complete" id="complete">
-    <div class="complete-icon">✅</div>
-    <div class="complete-title">Круг завершён!</div>
-    <div class="complete-sub" id="completeRounds">Кругов: 1</div>
+    <div class="complete-icon">✦</div>
+    <div class="complete-title">Круг завершён</div>
+    <div class="complete-rounds" id="completeRounds">Кругов: 1</div>
+    <div class="complete-sub">СубханАллах</div>
     <button class="complete-btn" onclick="nextRound()">Продолжить</button>
   </div>
 
   <script>
     const tg = window.Telegram?.WebApp;
 
-    // Блокируем открытие вне Telegram
     if (!tg || !tg.initData) {
       document.body.innerHTML = `
         <div class="gate">
@@ -295,59 +509,84 @@
       tg.expand();
     }
 
-    const CIRCUMFERENCE = 2 * Math.PI * 120; // 753.98
+    // ── Stars ──
+    (function generateStars() {
+      const container = document.getElementById('stars');
+      const count = 70;
+      for (let i = 0; i < count; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        const size = Math.random() < 0.7 ? 1 : (Math.random() < 0.8 ? 2 : 3);
+        s.style.cssText = `
+          width:${size}px; height:${size}px;
+          left:${Math.random()*100}%;
+          top:${Math.random()*100}%;
+          opacity:${(Math.random()*0.5+0.15).toFixed(2)};
+        `;
+        container.appendChild(s);
+      }
+    })();
+
+    // ── Ring colors per round ──
+    const RING_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399'];
+    const CIRCUMFERENCE = 2 * Math.PI * 110; // 691.15
 
     let count = 0;
     let rounds = 0;
+    let total = 0;
     let goal = 33;
     let infinite = false;
 
-    const counterEl  = document.getElementById('counter');
-    const roundsEl   = document.getElementById('rounds');
-    const goalLabel  = document.getElementById('goalLabel');
-    const ring       = document.getElementById('ring');
-    const completeEl = document.getElementById('complete');
-    const completeRounds = document.getElementById('completeRounds');
+    const counterEl    = document.getElementById('counter');
+    const goalSubEl    = document.getElementById('goalSub');
+    const statRounds   = document.getElementById('stat-rounds');
+    const statTotal    = document.getElementById('stat-total');
+    const statGoal     = document.getElementById('stat-goal');
+    const ring         = document.getElementById('ring');
+    const completeEl   = document.getElementById('complete');
+    const completeRoundsEl = document.getElementById('completeRounds');
+    const zikrLabel    = document.getElementById('zikrLabel');
+    const modalEl      = document.getElementById('modal');
 
     function load() {
       count    = parseInt(localStorage.getItem('tasbih_count')    || '0');
       rounds   = parseInt(localStorage.getItem('tasbih_rounds')   || '0');
+      total    = parseInt(localStorage.getItem('tasbih_total')    || '0');
       goal     = parseInt(localStorage.getItem('tasbih_goal')     || '33');
       infinite = localStorage.getItem('tasbih_infinite') === '1';
-
-      document.querySelectorAll('.mode-btn').forEach(btn => {
-        const isInfBtn = btn.id === 'infiniteBtn';
-        if (infinite) {
-          btn.classList.toggle('active', isInfBtn);
-        } else {
-          btn.classList.toggle('active', !isInfBtn && parseInt(btn.textContent) === goal);
-        }
-      });
+      syncPresetBtns();
       render();
     }
 
     function save() {
       localStorage.setItem('tasbih_count',    count);
       localStorage.setItem('tasbih_rounds',   rounds);
+      localStorage.setItem('tasbih_total',    total);
       localStorage.setItem('tasbih_goal',     goal);
       localStorage.setItem('tasbih_infinite', infinite ? '1' : '0');
     }
 
     function render() {
-      counterEl.textContent = count;
-      roundsEl.textContent  = rounds;
+      counterEl.textContent  = count;
+      statRounds.textContent = rounds;
+      statTotal.textContent  = total;
 
       if (infinite) {
-        goalLabel.textContent = '∞ бесконечный режим';
+        statGoal.textContent   = '∞';
+        goalSubEl.textContent  = '/ ∞';
         ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - (count % 100) / 100);
       } else {
-        goalLabel.textContent = `из ${goal}`;
+        statGoal.textContent   = goal;
+        goalSubEl.textContent  = `/ ${goal}`;
         ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - count / goal);
       }
+
+      ring.style.stroke = RING_COLORS[rounds % RING_COLORS.length];
     }
 
     function tap() {
       count++;
+      total++;
       haptic('light');
 
       counterEl.classList.remove('bump');
@@ -359,8 +598,9 @@
         rounds++;
         save();
         haptic('success');
-        completeRounds.textContent = `Кругов: ${rounds}`;
+        completeRoundsEl.textContent = `Кругов: ${rounds}`;
         completeEl.classList.add('show');
+        render();
       } else {
         render();
         save();
@@ -375,31 +615,59 @@
     }
 
     function resetAll() {
-      count  = 0;
+      count = 0;
       rounds = 0;
+      total = 0;
       completeEl.classList.remove('show');
       render();
       save();
       haptic('medium');
     }
 
-    function setGoal(n, btn) {
+    function setGoal(n) {
       infinite = false;
       goal = n;
       count = 0;
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+      syncPresetBtns();
+      closeModal();
       render();
       save();
     }
 
-    function setInfinite(btn) {
+    function setInfinite() {
       infinite = true;
       count = 0;
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+      syncPresetBtns();
+      closeModal();
       render();
       save();
+    }
+
+    function setCustomGoal() {
+      const val = parseInt(document.getElementById('customGoalInput').value);
+      if (val && val > 0) setGoal(val);
+    }
+
+    function syncPresetBtns() {
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        const txt = btn.textContent;
+        if (infinite) {
+          btn.classList.toggle('active', txt === '∞');
+        } else {
+          btn.classList.toggle('active', parseInt(txt) === goal);
+        }
+      });
+      zikrLabel.textContent = 'Зикр';
+    }
+
+    function openModal() {
+      modalEl.classList.add('show');
+    }
+    function closeModal() {
+      modalEl.classList.remove('show');
+    }
+    function closeModalOutside(e) {
+      if (e.target === modalEl) closeModal();
     }
 
     function haptic(type) {

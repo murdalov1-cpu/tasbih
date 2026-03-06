@@ -253,9 +253,45 @@
     <button class="complete-btn" onclick="nextRound()">Продолжить</button>
   </div>
 
+  <style>
+    .gate {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-align: center;
+      padding: 32px;
+      z-index: 100;
+    }
+    .gate-icon { font-size: 56px; }
+    .gate-title { font-size: 22px; font-weight: 700; }
+    .gate-sub { font-size: 15px; color: var(--muted); line-height: 1.5; }
+    .gate-link {
+      margin-top: 8px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 16px;
+    }
+  </style>
+
   <script>
     const tg = window.Telegram?.WebApp;
-    if (tg) {
+
+    // Блокируем открытие вне Telegram
+    if (!tg || !tg.initData) {
+      document.body.innerHTML = `
+        <div class="gate">
+          <div class="gate-icon">📿</div>
+          <div class="gate-title">Тасбих SmartAzan</div>
+          <div class="gate-sub">Это приложение доступно только через Telegram-бота.</div>
+          <a class="gate-link" href="https://t.me/smartazanbot">Открыть @smartazanbot</a>
+        </div>`;
+    } else {
       tg.ready();
       tg.expand();
     }

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Тасбих</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --accent: #4ade80;
+      --accent-dim: #22c55e;
+      --text: #f1f5f9;
+      --muted: #64748b;
+      --ring: rgba(74, 222, 128, 0.15);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 32px 24px 40px;
+      user-select: none;
+    }
+
+    /* ── Header ── */
+    .header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .reset-btn {
+      background: none;
+      border: 1px solid #334155;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .reset-btn:active { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Rounds ── */
+    .rounds {
+      font-size: 14px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .rounds span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── Counter display ── */
+    .counter-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .counter {
+      font-size: 96px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -4px;
+      transition: transform 0.08s ease;
+    }
+    .counter.bump { transform: scale(1.06); }
+
+    .goal-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Progress arc ── */
+    .progress-ring {
+      position: relative;
+      width: 260px;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .progress-ring svg {
+      position: absolute;
+      top: 0; left: 0;
+      transform: rotate(-90deg);
+    }
+
+    .ring-bg { fill: none; stroke: #1e2535; stroke-width: 6; }
+    .ring-fg {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 6;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.15s ease;
+    }
+
+    /* ── Tap button ── */
+    .tap-btn {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #2a3a2a, #111b11);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow:
+        0 0 0 12px var(--ring),
+        0 0 0 24px rgba(74,222,128,0.05),
+        0 8px 32px rgba(0,0,0,0.6);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tap-btn:active {
+      transform: scale(0.94);
+      box-shadow:
+        0 0 0 8px var(--ring),
+        0 4px 16px rgba(0,0,0,0.6);
+    }
+
+    .tap-icon {
+      font-size: 40px;
+      line-height: 1;
+    }
+
+    .tap-hint {
+      font-size: 12px;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* ── Mode selector ── */
+    .mode-selector {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mode-btn {
+      background: var(--surface);
+      border: 1px solid #2a2f3e;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mode-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a1a0a;
+      font-weight: 700;
+    }
+
+    /* ── Complete overlay ── */
+    .complete {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,15,10,0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 10;
+    }
+    .complete.show { opacity: 1; pointer-events: all; }
+    .complete-icon { font-size: 72px; }
+    .complete-title { font-size: 28px; font-weight: 700; }
+    .complete-sub { font-size: 15px; color: var(--muted); }
+    .complete-btn {
+      margin-top: 8px;
+      background: var(--accent);
+      color: #0a1a0a;
+      border: none;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px 40px;
+      border-radius: 30px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">Тасбих</div>
+    <button class="reset-btn" onclick="resetAll()">Сброс</button>
+  </div>
+
+  <div class="rounds">Кругов завершено: <span id="rounds">0</span></div>
+
+  <div class="counter-wrap">
+    <div class="progress-ring">
+      <svg viewBox="0 0 260 260" width="260" height="260">
+        <circle class="ring-bg" cx="130" cy="130" r="120"/>
+        <circle class="ring-fg" id="ring" cx="130" cy="130" r="120"
+          stroke-dasharray="753.98"
+          stroke-dashoffset="753.98"/>
+      </svg>
+      <button class="tap-btn" onclick="tap()" id="tapBtn">
+        <div class="tap-icon">📿</div>
+        <div class="tap-hint">нажми</div>
+      </button>
+    </div>
+    <div class="counter" id="counter">0</div>
+    <div class="goal-label" id="goalLabel">из 33</div>
+  </div>
+
+  <div class="mode-selector">
+    <button class="mode-btn active" onclick="setGoal(33, this)">33</button>
+    <button class="mode-btn" onclick="setGoal(99, this)">99</button>
+    <button class="mode-btn" onclick="setGoal(100, this)">100</button>
+  </div>
+
+  <div class="complete" id="complete">
+    <div class="complete-icon">✅</div>
+    <div class="complete-title">Круг завершён!</div>
+    <div class="complete-sub" id="completeRounds">Кругов: 1</div>
+    <button class="complete-btn" onclick="nextRound()">Продолжить</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    const CIRCUMFERENCE = 2 * Math.PI * 120; // 753.98
+
+    let count = 0;
+    let rounds = 0;
+    let goal = 33;
+
+    const counterEl  = document.getElementById('counter');
+    const roundsEl   = document.getElementById('rounds');
+    const goalLabel  = document.getElementById('goalLabel');
+    const ring       = document.getElementById('ring');
+    const completeEl = document.getElementById('complete');
+    const completeRounds = document.getElementById('completeRounds');
+
+    function load() {
+      count  = parseInt(localStorage.getItem('tasbih_count')  || '0');
+      rounds = parseInt(localStorage.getItem('tasbih_rounds') || '0');
+      goal   = parseInt(localStorage.getItem('tasbih_goal')   || '33');
+      // восстанавливаем активную кнопку режима
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.textContent) === goal);
+      });
+      render();
+    }
+
+    function save() {
+      localStorage.setItem('tasbih_count',  count);
+      localStorage.setItem('tasbih_rounds', rounds);
+      localStorage.setItem('tasbih_goal',   goal);
+    }
+
+    function render() {
+      counterEl.textContent = count;
+      roundsEl.textContent  = rounds;
+      goalLabel.textContent = `из ${goal}`;
+      const progress = count / goal;
+      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+    }
+
+    function tap() {
+      count++;
+      haptic('light');
+
+      // bump animation
+      counterEl.classList.remove('bump');
+      void counterEl.offsetWidth;
+      counterEl.classList.add('bump');
+      setTimeout(() => counterEl.classList.remove('bump'), 80);
+
+      if (count >= goal) {
+        rounds++;
+        save();
+        haptic('success');
+        completeRounds.textContent = `Кругов: ${rounds}`;
+        completeEl.classList.add('show');
+      } else {
+        render();
+        save();
+      }
+    }
+
+    function nextRound() {
+      count = 0;
+      completeEl.classList.remove('show');
+      render();
+      save();
+    }
+
+    function resetAll() {
+      count  = 0;
+      rounds = 0;
+      completeEl.classList.remove('show');
+      render();
+      save();
+      haptic('medium');
+    }
+
+    function setGoal(n, btn) {
+      goal = n;
+      count = 0;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+      save();
+    }
+
+    function haptic(type) {
+      if (!tg?.HapticFeedback) return;
+      if (type === 'success') {
+        tg.HapticFeedback.notificationOccurred('success');
+      } else {
+        tg.HapticFeedback.impactOccurred(type);
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

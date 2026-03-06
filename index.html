@@ -6,6 +6,31 @@
   <title>Тасбих</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+    .gate {
+      position: fixed;
+      inset: 0;
+      background: #0f1117;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-align: center;
+      padding: 32px;
+      z-index: 100;
+    }
+    .gate-icon { font-size: 56px; }
+    .gate-title { font-size: 22px; font-weight: 700; color: #f1f5f9; }
+    .gate-sub { font-size: 15px; color: #64748b; line-height: 1.5; }
+    .gate-link {
+      margin-top: 8px;
+      color: #4ade80;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 16px;
+    }
+  </style>
+  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     :root {
@@ -252,32 +277,6 @@
     <div class="complete-sub" id="completeRounds">Кругов: 1</div>
     <button class="complete-btn" onclick="nextRound()">Продолжить</button>
   </div>
-
-  <style>
-    .gate {
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      text-align: center;
-      padding: 32px;
-      z-index: 100;
-    }
-    .gate-icon { font-size: 56px; }
-    .gate-title { font-size: 22px; font-weight: 700; }
-    .gate-sub { font-size: 15px; color: var(--muted); line-height: 1.5; }
-    .gate-link {
-      margin-top: 8px;
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 16px;
-    }
-  </style>
 
   <script>
     const tg = window.Telegram?.WebApp;

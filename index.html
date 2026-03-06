@@ -243,6 +243,7 @@
     <button class="mode-btn active" onclick="setGoal(33, this)">33</button>
     <button class="mode-btn" onclick="setGoal(99, this)">99</button>
     <button class="mode-btn" onclick="setGoal(100, this)">100</button>
+    <button class="mode-btn" id="infiniteBtn" onclick="setInfinite(this)">∞</button>
   </div>
 
   <div class="complete" id="complete">
@@ -264,6 +265,7 @@
     let count = 0;
     let rounds = 0;
     let goal = 33;
+    let infinite = false;
 
     const counterEl  = document.getElementById('counter');
     const roundsEl   = document.getElementById('rounds');
@@ -273,41 +275,52 @@
     const completeRounds = document.getElementById('completeRounds');
 
     function load() {
-      count  = parseInt(localStorage.getItem('tasbih_count')  || '0');
-      rounds = parseInt(localStorage.getItem('tasbih_rounds') || '0');
-      goal   = parseInt(localStorage.getItem('tasbih_goal')   || '33');
-      // восстанавливаем активную кнопку режима
+      count    = parseInt(localStorage.getItem('tasbih_count')    || '0');
+      rounds   = parseInt(localStorage.getItem('tasbih_rounds')   || '0');
+      goal     = parseInt(localStorage.getItem('tasbih_goal')     || '33');
+      infinite = localStorage.getItem('tasbih_infinite') === '1';
+
       document.querySelectorAll('.mode-btn').forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.textContent) === goal);
+        const isInfBtn = btn.id === 'infiniteBtn';
+        if (infinite) {
+          btn.classList.toggle('active', isInfBtn);
+        } else {
+          btn.classList.toggle('active', !isInfBtn && parseInt(btn.textContent) === goal);
+        }
       });
       render();
     }
 
     function save() {
-      localStorage.setItem('tasbih_count',  count);
-      localStorage.setItem('tasbih_rounds', rounds);
-      localStorage.setItem('tasbih_goal',   goal);
+      localStorage.setItem('tasbih_count',    count);
+      localStorage.setItem('tasbih_rounds',   rounds);
+      localStorage.setItem('tasbih_goal',     goal);
+      localStorage.setItem('tasbih_infinite', infinite ? '1' : '0');
     }
 
     function render() {
       counterEl.textContent = count;
       roundsEl.textContent  = rounds;
-      goalLabel.textContent = `из ${goal}`;
-      const progress = count / goal;
-      ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+
+      if (infinite) {
+        goalLabel.textContent = '∞ бесконечный режим';
+        ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - (count % 100) / 100);
+      } else {
+        goalLabel.textContent = `из ${goal}`;
+        ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - count / goal);
+      }
     }
 
     function tap() {
       count++;
       haptic('light');
 
-      // bump animation
       counterEl.classList.remove('bump');
       void counterEl.offsetWidth;
       counterEl.classList.add('bump');
       setTimeout(() => counterEl.classList.remove('bump'), 80);
 
-      if (count >= goal) {
+      if (!infinite && count >= goal) {
         rounds++;
         save();
         haptic('success');
@@ -336,7 +349,17 @@
     }
 
     function setGoal(n, btn) {
+      infinite = false;
       goal = n;
+      count = 0;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+      save();
+    }
+
+    function setInfinite(btn) {
+      infinite = true;
       count = 0;
       document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');

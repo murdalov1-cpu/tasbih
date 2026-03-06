@@ -7,421 +7,151 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
     :root {
       --bg-deep:    #06091a;
-      --bg-mid:     #0b1030;
       --surface:    rgba(255,255,255,0.06);
       --border:     rgba(255,255,255,0.10);
       --accent:     #4ade80;
-      --accent-dim: #22c55e;
       --text:       #e8eaf2;
       --muted:      rgba(255,255,255,0.38);
       --ring-track: rgba(255,255,255,0.08);
     }
-
-    html, body {
-      height: 100%;
-      overflow: hidden;
-    }
-
+    html, body { height: 100%; overflow: hidden; }
     body {
       background: radial-gradient(ellipse at 50% 0%, #101840 0%, #060918 70%);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      display: flex; flex-direction: column; align-items: center;
       padding: 24px 20px 32px;
-      user-select: none;
-      position: relative;
+      user-select: none; position: relative;
     }
-
-    /* ── Stars ── */
-    #stars {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .star {
-      position: absolute;
-      border-radius: 50%;
-      background: white;
-    }
-
-    /* ── Content above stars ── */
+    #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star { position: absolute; border-radius: 50%; background: white; }
     .header, .stats-row, .ring-area, .hint, .zikr-btn { position: relative; z-index: 1; }
-
-    /* ── Header ── */
-    .header {
-      width: 100%;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    .header-left {}
-    .title {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--text);
-    }
-    .title-arabic {
-      font-size: 14px;
-      color: var(--muted);
-      margin-top: 2px;
-      font-weight: 400;
-      letter-spacing: 0.02em;
-    }
+    .header { width: 100%; display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+    .title { font-size: 13px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+    .title-arabic { font-size: 14px; color: var(--muted); margin-top: 2px; }
     .reset-btn {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 12px;
-      letter-spacing: 0.04em;
-      padding: 7px 14px;
-      border-radius: 20px;
-      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+      color: var(--muted); font-size: 12px; padding: 7px 14px;
+      border-radius: 20px; cursor: pointer;
       transition: border-color 0.2s, color 0.2s, background 0.2s;
     }
     .reset-btn:active { border-color: var(--accent); color: var(--accent); background: rgba(74,222,128,0.08); }
-    .reset-icon { font-size: 11px; }
-
-    /* ── Stats row ── */
-    .stats-row {
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 0;
-    }
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px 8px 14px;
-      text-align: center;
-    }
-    .stat-label {
-      font-size: 10px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    .stat-value {
-      font-size: 26px;
-      font-weight: 700;
-      line-height: 1;
-      color: var(--text);
-    }
+    .stats-row { width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px 14px; text-align: center; }
+    .stat-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
     .stat-value.accent { color: var(--accent); }
-
-    /* ── Ring + Tap area ── */
-    .ring-area {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .ring-wrap {
-      position: relative;
-      width: 240px;
-      height: 240px;
-    }
-
-    .ring-wrap svg {
-      position: absolute;
-      inset: 0;
-      transform: rotate(-90deg);
-    }
-
+    .ring-area { flex: 1; display: flex; align-items: center; justify-content: center; }
+    .ring-wrap { position: relative; width: 240px; height: 240px; }
+    .ring-wrap svg { position: absolute; inset: 0; transform: rotate(-90deg); }
     .ring-track { fill: none; stroke: var(--ring-track); stroke-width: 5; }
-    .ring-fill {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 5;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.15s ease, stroke 0.4s ease;
-    }
-
+    .ring-fill { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.15s ease, stroke 0.4s ease; }
     .tap-btn {
-      position: absolute;
-      inset: 16px;
-      border-radius: 50%;
+      position: absolute; inset: 16px; border-radius: 50%;
       background: radial-gradient(circle at 40% 35%, #1e2560, #0e1238);
-      border: none;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.08),
-        0 0 0 1px rgba(255,255,255,0.06),
-        0 12px 40px rgba(0,0,0,0.6);
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
-      -webkit-appearance: none;
+      border: none; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(255,255,255,0.06), 0 12px 40px rgba(0,0,0,0.6);
+      transition: transform 0.1s ease, box-shadow 0.1s ease; -webkit-appearance: none;
     }
-    .tap-btn:active {
-      transform: scale(0.93);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.04),
-        0 0 0 1px rgba(255,255,255,0.04),
-        0 4px 16px rgba(0,0,0,0.6);
-    }
-    .counter {
-      font-size: 72px;
-      font-weight: 700;
-      line-height: 1;
-      letter-spacing: -3px;
-      color: var(--text);
-      transition: transform 0.08s ease;
-    }
+    .tap-btn:active { transform: scale(0.93); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 16px rgba(0,0,0,0.6); }
+    .counter { font-size: 72px; font-weight: 700; line-height: 1; letter-spacing: -3px; transition: transform 0.08s ease; }
     .counter.bump { transform: scale(1.07); }
-    .goal-sub {
-      font-size: 14px;
-      color: var(--muted);
-      letter-spacing: 0.02em;
-    }
-
-    /* ── Hint ── */
-    .hint {
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-top: 12px;
-      margin-bottom: 20px;
-    }
-
-    /* ── Zikr button ── */
+    .goal-sub { font-size: 14px; color: var(--muted); }
+    .hint { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 12px; margin-bottom: 20px; }
     .zikr-btn {
-      width: 100%;
-      padding: 18px 24px;
-      background: rgba(15, 25, 45, 0.85);
-      border: 1px solid rgba(74, 222, 128, 0.35);
-      border-radius: 18px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
+      width: 100%; padding: 18px 24px;
+      background: rgba(15,25,45,0.85); border: 1px solid rgba(74,222,128,0.35);
+      border-radius: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
       box-shadow: 0 0 24px rgba(74,222,128,0.08);
-      transition: border-color 0.2s, box-shadow 0.2s;
-      -webkit-appearance: none;
+      transition: border-color 0.2s, box-shadow 0.2s; -webkit-appearance: none;
     }
-    .zikr-btn:active {
-      border-color: var(--accent);
-      box-shadow: 0 0 32px rgba(74,222,128,0.18);
-    }
-    .zikr-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px rgba(74,222,128,0.8);
-    }
-    .zikr-label {
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--text);
-    }
-
-    /* ── Goal Modal ── */
+    .zikr-btn:active { border-color: var(--accent); box-shadow: 0 0 32px rgba(74,222,128,0.18); }
+    .zikr-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px rgba(74,222,128,0.8); }
+    .zikr-label { font-size: 14px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
     .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s;
-      z-index: 50;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 50;
     }
     .modal-overlay.show { opacity: 1; pointer-events: all; }
-
     .modal-sheet {
-      width: 100%;
-      background: #0f1428;
-      border: 1px solid rgba(255,255,255,0.1);
-      border-bottom: none;
-      border-radius: 24px 24px 0 0;
-      padding: 12px 20px 40px;
-      transform: translateY(100%);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%; background: #0f1428;
+      border: 1px solid rgba(255,255,255,0.1); border-bottom: none;
+      border-radius: 24px 24px 0 0; padding: 12px 20px 40px;
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
     }
     .modal-overlay.show .modal-sheet { transform: translateY(0); }
-
-    .modal-handle {
-      width: 36px;
-      height: 4px;
-      border-radius: 2px;
-      background: rgba(255,255,255,0.15);
-      margin: 0 auto 20px;
-    }
-    .modal-title {
-      font-size: 12px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
-    .modal-presets {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 16px;
-    }
+    .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); margin: 0 auto 20px; }
+    .modal-title { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+    .modal-presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
     .preset-btn {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-size: 16px;
-      font-weight: 600;
-      padding: 14px 8px;
-      border-radius: 14px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s;
-      -webkit-appearance: none;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-size: 20px; font-weight: 600;
+      padding: 18px 8px; border-radius: 14px; cursor: pointer;
+      text-align: center; transition: all 0.15s; -webkit-appearance: none;
     }
-    .preset-btn.active {
-      background: rgba(74,222,128,0.15);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
+    .preset-btn.active { background: rgba(74,222,128,0.15); border-color: var(--accent); color: var(--accent); }
     .preset-btn:active { opacity: 0.7; }
-
-    .custom-goal-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
+    .custom-goal-row { display: flex; gap: 10px; align-items: center; }
     .custom-input {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      color: var(--text);
-      font-size: 16px;
-      padding: 12px 14px;
-      outline: none;
-      -webkit-appearance: none;
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text); font-size: 16px;
+      padding: 12px 14px; outline: none; -webkit-appearance: none;
     }
     .custom-input:focus { border-color: rgba(255,255,255,0.25); }
     .custom-input::placeholder { color: var(--muted); }
     .custom-set-btn {
-      background: var(--accent);
-      border: none;
-      color: #071007;
-      font-size: 14px;
-      font-weight: 700;
-      padding: 12px 20px;
-      border-radius: 12px;
-      cursor: pointer;
-      -webkit-appearance: none;
+      background: var(--accent); border: none; color: #071007;
+      font-size: 14px; font-weight: 700; padding: 12px 20px;
+      border-radius: 12px; cursor: pointer; -webkit-appearance: none;
     }
-
-    /* ── Complete overlay ── */
     .complete {
-      position: fixed;
-      inset: 0;
-      background: rgba(6,9,26,0.92);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 40;
+      position: fixed; inset: 0; background: rgba(6,9,26,0.92);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 40;
     }
     .complete.show { opacity: 1; pointer-events: all; }
     .complete-icon { font-size: 64px; }
-    .complete-title { font-size: 26px; font-weight: 700; letter-spacing: 0.02em; }
+    .complete-title { font-size: 26px; font-weight: 700; }
+    .complete-rounds { font-size: 18px; color: var(--accent); font-weight: 600; }
     .complete-sub { font-size: 14px; color: var(--muted); letter-spacing: 0.06em; }
-    .complete-rounds {
-      font-size: 18px;
-      color: var(--accent);
-      font-weight: 600;
-    }
     .complete-btn {
-      margin-top: 12px;
-      background: var(--accent);
-      color: #071007;
-      border: none;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 15px 44px;
-      border-radius: 50px;
-      cursor: pointer;
-      -webkit-appearance: none;
+      margin-top: 12px; background: var(--accent); color: #071007;
+      border: none; font-size: 15px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 15px 44px; border-radius: 50px; cursor: pointer; -webkit-appearance: none;
     }
-
-    /* ── Gate (non-Telegram) ── */
     .gate {
-      position: fixed;
-      inset: 0;
-      background: #06091a;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      text-align: center;
-      padding: 32px;
-      z-index: 100;
+      position: fixed; inset: 0; background: #06091a;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; text-align: center; padding: 32px; z-index: 100;
     }
     .gate-icon { font-size: 56px; }
-    .gate-title { font-size: 22px; font-weight: 700; color: var(--text); }
+    .gate-title { font-size: 22px; font-weight: 700; }
     .gate-sub { font-size: 15px; color: var(--muted); line-height: 1.5; }
-    .gate-link {
-      margin-top: 8px;
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 16px;
-    }
+    .gate-link { margin-top: 8px; color: var(--accent); text-decoration: none; font-weight: 600; font-size: 16px; }
   </style>
 </head>
 <body>
 
-  <!-- Stars background -->
   <div id="stars"></div>
 
-  <!-- Header -->
   <div class="header">
-    <div class="header-left">
+    <div>
       <div class="title">Тасбих</div>
       <div class="title-arabic">ذِكر</div>
     </div>
-    <button class="reset-btn" onclick="resetAll()">
-      <span class="reset-icon">↺</span> Сброс
-    </button>
+    <button class="reset-btn" onclick="resetAll()">↺ Сброс</button>
   </div>
 
-  <!-- Stats -->
   <div class="stats-row">
     <div class="stat-card">
       <div class="stat-label">Круги</div>
@@ -437,45 +167,37 @@
     </div>
   </div>
 
-  <!-- Ring + Tap -->
   <div class="ring-area">
     <div class="ring-wrap">
       <svg viewBox="0 0 240 240" width="240" height="240">
         <circle class="ring-track" cx="120" cy="120" r="110"/>
         <circle class="ring-fill" id="ring" cx="120" cy="120" r="110"
-          stroke-dasharray="691.15"
-          stroke-dashoffset="691.15"/>
+          stroke-dasharray="691.15" stroke-dashoffset="691.15"/>
       </svg>
-      <button class="tap-btn" id="tapBtn" onclick="tap()">
+      <button class="tap-btn" onclick="tap()">
         <div class="counter" id="counter">0</div>
         <div class="goal-sub" id="goalSub">/ 33</div>
       </button>
     </div>
   </div>
 
-  <!-- Hint -->
   <div class="hint">Нажми для счёта</div>
 
-  <!-- Zikr selector button -->
   <button class="zikr-btn" onclick="openModal()">
     <span class="zikr-dot"></span>
-    <span class="zikr-label" id="zikrLabel">Зикр</span>
+    <span class="zikr-label" id="zikrLabel">Выбрать цель</span>
     <span class="zikr-dot"></span>
   </button>
 
-  <!-- Goal Modal -->
   <div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
       <div class="modal-title">Выбери цель</div>
       <div class="modal-presets">
-        <button class="preset-btn" onclick="setGoal(11)">11</button>
-        <button class="preset-btn active" onclick="setGoal(33)">33</button>
-        <button class="preset-btn" onclick="setGoal(99)">99</button>
-        <button class="preset-btn" onclick="setGoal(100)">100</button>
-        <button class="preset-btn" onclick="setGoal(34)">34</button>
-        <button class="preset-btn" onclick="setGoal(1000)">1000</button>
-        <button class="preset-btn" onclick="setInfinite()">∞</button>
+        <button class="preset-btn" data-goal="11"  onclick="setGoal(11)">11</button>
+        <button class="preset-btn" data-goal="33"  onclick="setGoal(33)">33</button>
+        <button class="preset-btn" data-goal="100" onclick="setGoal(100)">100</button>
+        <button class="preset-btn" data-goal="inf" onclick="setInfinite()">∞</button>
       </div>
       <div class="custom-goal-row">
         <input class="custom-input" type="number" id="customGoalInput" placeholder="Своё число" min="1" max="99999">
@@ -484,7 +206,6 @@
     </div>
   </div>
 
-  <!-- Complete overlay -->
   <div class="complete" id="complete">
     <div class="complete-icon">✦</div>
     <div class="complete-title">Круг завершён</div>
@@ -509,52 +230,40 @@
       tg.expand();
     }
 
-    // ── Stars ──
-    (function generateStars() {
-      const container = document.getElementById('stars');
-      const count = 70;
-      for (let i = 0; i < count; i++) {
+    (function() {
+      const c = document.getElementById('stars');
+      for (let i = 0; i < 70; i++) {
         const s = document.createElement('div');
         s.className = 'star';
-        const size = Math.random() < 0.7 ? 1 : (Math.random() < 0.8 ? 2 : 3);
-        s.style.cssText = `
-          width:${size}px; height:${size}px;
-          left:${Math.random()*100}%;
-          top:${Math.random()*100}%;
-          opacity:${(Math.random()*0.5+0.15).toFixed(2)};
-        `;
-        container.appendChild(s);
+        const sz = Math.random() < 0.7 ? 1 : (Math.random() < 0.8 ? 2 : 3);
+        s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;opacity:${(Math.random()*0.5+0.15).toFixed(2)};`;
+        c.appendChild(s);
       }
     })();
 
-    // ── Ring colors per round ──
     const RING_COLORS = ['#4ade80','#60a5fa','#f472b6','#fb923c','#a78bfa','#34d399'];
-    const CIRCUMFERENCE = 2 * Math.PI * 110; // 691.15
+    const CIRCUMFERENCE = 2 * Math.PI * 110;
 
-    let count = 0;
-    let rounds = 0;
-    let total = 0;
-    let goal = 33;
-    let infinite = false;
+    let count = 0, rounds = 0, total = 0, goal = 33, infinite = false;
 
-    const counterEl    = document.getElementById('counter');
-    const goalSubEl    = document.getElementById('goalSub');
-    const statRounds   = document.getElementById('stat-rounds');
-    const statTotal    = document.getElementById('stat-total');
-    const statGoal     = document.getElementById('stat-goal');
-    const ring         = document.getElementById('ring');
-    const completeEl   = document.getElementById('complete');
+    const counterEl      = document.getElementById('counter');
+    const goalSubEl      = document.getElementById('goalSub');
+    const statRounds     = document.getElementById('stat-rounds');
+    const statTotal      = document.getElementById('stat-total');
+    const statGoal       = document.getElementById('stat-goal');
+    const ring           = document.getElementById('ring');
+    const completeEl     = document.getElementById('complete');
     const completeRoundsEl = document.getElementById('completeRounds');
-    const zikrLabel    = document.getElementById('zikrLabel');
-    const modalEl      = document.getElementById('modal');
+    const zikrLabel      = document.getElementById('zikrLabel');
+    const modalEl        = document.getElementById('modal');
 
     function load() {
-      count    = parseInt(localStorage.getItem('tasbih_count')    || '0');
-      rounds   = parseInt(localStorage.getItem('tasbih_rounds')   || '0');
-      total    = parseInt(localStorage.getItem('tasbih_total')    || '0');
-      goal     = parseInt(localStorage.getItem('tasbih_goal')     || '33');
+      count    = parseInt(localStorage.getItem('tasbih_count')  || '0');
+      rounds   = parseInt(localStorage.getItem('tasbih_rounds') || '0');
+      total    = parseInt(localStorage.getItem('tasbih_total')  || '0');
+      goal     = parseInt(localStorage.getItem('tasbih_goal')   || '33');
       infinite = localStorage.getItem('tasbih_infinite') === '1';
-      syncPresetBtns();
+      syncBtns();
       render();
     }
 
@@ -570,30 +279,25 @@
       counterEl.textContent  = count;
       statRounds.textContent = rounds;
       statTotal.textContent  = total;
-
       if (infinite) {
-        statGoal.textContent   = '∞';
-        goalSubEl.textContent  = '/ ∞';
+        statGoal.textContent  = '∞';
+        goalSubEl.textContent = '/ ∞';
         ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - (count % 100) / 100);
       } else {
-        statGoal.textContent   = goal;
-        goalSubEl.textContent  = `/ ${goal}`;
+        statGoal.textContent  = goal;
+        goalSubEl.textContent = `/ ${goal}`;
         ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - count / goal);
       }
-
       ring.style.stroke = RING_COLORS[rounds % RING_COLORS.length];
     }
 
     function tap() {
-      count++;
-      total++;
+      count++; total++;
       haptic('light');
-
       counterEl.classList.remove('bump');
       void counterEl.offsetWidth;
       counterEl.classList.add('bump');
       setTimeout(() => counterEl.classList.remove('bump'), 80);
-
       if (!infinite && count >= goal) {
         rounds++;
         save();
@@ -602,81 +306,58 @@
         completeEl.classList.add('show');
         render();
       } else {
-        render();
-        save();
+        render(); save();
       }
     }
 
     function nextRound() {
       count = 0;
       completeEl.classList.remove('show');
-      render();
-      save();
+      render(); save();
     }
 
     function resetAll() {
-      count = 0;
-      rounds = 0;
-      total = 0;
+      count = 0; rounds = 0; total = 0;
       completeEl.classList.remove('show');
-      render();
-      save();
+      render(); save();
       haptic('medium');
     }
 
     function setGoal(n) {
-      infinite = false;
-      goal = n;
-      count = 0;
-      syncPresetBtns();
-      closeModal();
-      render();
-      save();
+      infinite = false; goal = n; count = 0;
+      syncBtns(); closeModal(); render(); save();
     }
 
     function setInfinite() {
-      infinite = true;
-      count = 0;
-      syncPresetBtns();
-      closeModal();
-      render();
-      save();
+      infinite = true; count = 0;
+      syncBtns(); closeModal(); render(); save();
     }
 
     function setCustomGoal() {
       const val = parseInt(document.getElementById('customGoalInput').value);
-      if (val && val > 0) setGoal(val);
+      if (val && val > 0) {
+        document.getElementById('customGoalInput').value = '';
+        setGoal(val);
+      }
     }
 
-    function syncPresetBtns() {
+    function syncBtns() {
       document.querySelectorAll('.preset-btn').forEach(btn => {
-        const txt = btn.textContent;
-        if (infinite) {
-          btn.classList.toggle('active', txt === '∞');
-        } else {
-          btn.classList.toggle('active', parseInt(txt) === goal);
-        }
+        const g = btn.dataset.goal;
+        btn.classList.toggle('active', infinite ? g === 'inf' : parseInt(g) === goal);
       });
-      zikrLabel.textContent = 'Зикр';
+      zikrLabel.textContent = infinite ? '∞  Бесконечно' : `Цель: ${goal}`;
     }
 
-    function openModal() {
-      modalEl.classList.add('show');
-    }
-    function closeModal() {
-      modalEl.classList.remove('show');
-    }
-    function closeModalOutside(e) {
-      if (e.target === modalEl) closeModal();
-    }
+    function openModal()  { modalEl.classList.add('show'); }
+    function closeModal() { modalEl.classList.remove('show'); }
+    function closeModalOutside(e) { if (e.target === modalEl) closeModal(); }
 
     function haptic(type) {
       if (!tg?.HapticFeedback) return;
-      if (type === 'success') {
-        tg.HapticFeedback.notificationOccurred('success');
-      } else {
-        tg.HapticFeedback.impactOccurred(type);
-      }
+      type === 'success'
+        ? tg.HapticFeedback.notificationOccurred('success')
+        : tg.HapticFeedback.impactOccurred(type);
     }
 
     load();
